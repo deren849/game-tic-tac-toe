@@ -1,42 +1,176 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id"
+data-color="default"
+data-contrast="normal"
+data-text="normal"
+data-font="default"
+data-motion="full"
+>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1b1a2e" />
   <title>Tic Tac Toe</title>
-  <link rel="stylesheet" href="TicTacToe.css"/>
-  <script src="ticTacToe.js" defer></script>
+  <link rel="stylesheet" href="./src/TicTacToe.css"/>
 </head>
 <body>
   <main class="card">
+    <header class="topbar">
+      <button class="pill" id="a11y-open" type="button" aria-haspopup="dialog">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="4.5" r="2"/>
+          <path d="M4.5 8.5 12 10l7.5-1.5M12 10v5M12 15l-3.5 6M12 15l3.5 6"/>
+        </svg>
+        <span data-i18n="a11yButton">Aksesibilitas</span>
+      </button>
+
+      <div class="seg" role="group" aria-label="Bahasa" data-i18n-label="langGroup">
+        <button class="seg-btn" type="button" data-lang="id" lang="id" aria-pressed="true" aria-label="ID – Bahasa Indonesia">ID</button>
+        <button class="seg-btn" type="button" data-lang="en" lang="en" aria-pressed="false" aria-label="EN – English">EN</button>
+      </div>
+    </header>
+
     <h1 class="title">Tic Tac <span>Toe</span></h1>
     <p class="status" id="status" aria-live="polite">Giliranmu!</p>
 
-    <div class="board" id="board" role="grid" aria-label="Papan tic tac toe"></div>
+    <div class="board" id="board" role="group" aria-label="Papan tic tac toe"></div>
+    <p class="hint" id="rule-hint"></p>
+    <p class="sr-only" id="announcer" aria-live="polite"></p>
 
-    <div class="difficulty" role="group" aria-label="Tingkat kesulitan">
-      <button class="chip" id="easy" type="button">Mudah</button>
-      <button class="chip active" id="hard" type="button">Sulit</button>
-    </div>
+    <section class="controls">
+      <div class="field">
+        <span class="field-label" id="size-label" data-i18n="sizeLabel">Ukuran papan</span>
+        <div class="seg" role="group" aria-labelledby="size-label">
+          <button class="seg-btn" type="button" data-size="3" aria-pressed="true">3×3</button>
+          <button class="seg-btn" type="button" data-size="5" aria-pressed="false">5×5</button>
+        </div>
+      </div>
 
-    <div class="scoreboard">
+      <div class="field">
+        <span class="field-label" id="level-label" data-i18n="levelLabel">Tingkat kesulitan</span>
+        <div class="seg" role="group" aria-labelledby="level-label">
+          <button class="seg-btn" type="button" data-level="easy" aria-pressed="false" data-i18n="levelEasy">Mudah</button>
+          <button class="seg-btn" type="button" data-level="hard" aria-pressed="true" data-i18n="levelHard">Sulit</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="scoreboard">
       <div class="score">
-        <span class="score-label">Kamu</span>
-        <strong id="score-win">0</strong>
+        <span class="score-label" data-i18n="scoreYou">Kamu</span> 
+        <strong id="score-win">0</strong> <b class="sym sym-x">X</b></span>
       </div>
       <div class="score">
-        <span class="score-label">Seri</span>
+        <span class="score-label" data-i18n="scoreDraw">Seri</span>
         <strong id="score-draw">0</strong>
       </div>
       <div class="score">
-        <span class="score-label">Bot</span>
-        <strong id="score-lose">0</strong>
+        <span class="score-label" data-i18n="scoreBot">Bot</span>
+        <strong id="score-lose">0</strong> <b class="sym sym-o">O</b></span>
       </div>
-    </div>
+    </section>
 
-    <button class="reset" id="reset" type="button">Main Lagi</button>
+    <button class="btn btn-primary btn-block" id="reset" type="button" data-i18n="resetGame">Ulang Permainan</button>
   </main>
 
-  
+  <dialog id="a11y-dialog" aria-labelledby="a11y-title">
+    <form id="a11y-form" class="dialog-inner">
+      <header class="dialog-head">
+        <h2 id="a11y-title" data-i18n="a11yTitle">Aksesibilitas</h2>
+        <button class="icon-btn" type="button" data-close-dialog data-i18n-label="a11yClose" aria-label="Tutup">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6 6 18"/>
+          </svg>
+        </button>
+      </header> 
+    
+
+    <div class="dialog-body">
+      <p class="intro" data-i18n="a11yIntro">Sesuaikan tampilan agar nyaman untukmu. Perubahan langsung diterapkan dan tersimpan.</p>
+
+        <fieldset class="group">
+          <legend data-i18n="colorTitle">Mode warna</legend>
+            <div class="options">
+              <label class="option">
+                <input type="radio" name="colorMode" value="default"/>
+                <span class="swatch" data-palette="default" aria-hidden="true"></span>
+                <span class="option-text" data-i18n="colorDefault">Normal</span>
+                </label>
+            <label class="option">
+              <input type="radio" name="colorMode" value="redGreen" />
+              <span class="swatch" data-palette="redGreen" aria-hidden="true"></span>
+              <span class="option-text" data-i18n="colorRedGreen">Buta warna merah-hijau</span>
+            </label>
+            <label class="option">
+              <input type="radio" name="colorMode" value="blueYellow" />
+              <span class="swatch" data-palette="blueYellow" aria-hidden="true"></span>
+              <span class="option-text" data-i18n="colorBlueYellow">Buta warna biru-kuning</span>
+            </label>
+            <label class="option">
+              <input type="radio" name="colorMode" value="mono" />
+              <span class="swatch" data-palette="mono" aria-hidden="true"></span>
+              <span class="option-text" data-i18n="colorMono">Hitam-putih</span>
+              </label>
+            </div>
+            <p class="note" data-i18n="colorNote"> X dan O akan selalu berbentuk beda, jadi game tidak bergantung pada warna saja.</p>
+        </fieldset>
+
+         <fieldset class="group">
+          <legend data-i18n="textTitle">Ukuran teks</legend>
+          <div class="seg-radio">
+            <label>
+              <input type="radio" name="textScale" value="normal" />
+              <span data-i18n="textNormal">Normal</span>
+            </label>
+            <label>
+              <input type="radio" name="textScale" value="large" />
+              <span data-i18n="textLarge">Besar</span>
+            </label>
+            <label>
+              <input type="radio" name="textScale" value="xlarge" />
+              <span data-i18n="textXLarge">Sangat besar</span>
+            </label>
+          </div>
+        </fieldset>
+
+    <fieldset class="group">
+          <legend data-i18n="displayTitle">Tampilan</legend>
+          <label class="toggle">
+            <span class="toggle-text">
+              <span class="toggle-title" data-i18n="optContrast">Kontras tinggi</span>
+              <span class="toggle-hint" data-i18n="optContrastHint">Latar hitam, teks putih, garis tebal</span>
+            </span>
+            <input type="checkbox" role="switch" name="highContrast" />
+          </label>
+          <label class="toggle">
+            <span class="toggle-text">
+              <span class="toggle-title" data-i18n="optFont">Font mudah dibaca</span>
+              <span class="toggle-hint" data-i18n="optFontHint">Huruf lebih jelas dengan jarak lebih lega</span>
+            </span>
+            <input type="checkbox" role="switch" name="readableFont" />
+          </label>
+          <label class="toggle">
+            <span class="toggle-text">
+              <span class="toggle-title" data-i18n="optMotion">Kurangi animasi</span>
+              <span class="toggle-hint" data-i18n="optMotionHint">Matikan animasi dan efek bergerak</span>
+            </span>
+            <input type="checkbox" role="switch" name="reduceMotion" />
+          </label>
+        </fieldset>
+
+        <section class="group info">
+          <h3 data-i18n="inputTitle">Keyboard &amp; pembaca layar</h3> 
+          <p class="note" data-i18n="inputNote">Mainkan dengan keyboard: tombol panah untuk pindah kotak, Enter atau Spasi untuk memilih. Setiap langkah dibacakan untuk pembaca layar.</p>
+        </section>
+      </div>
+
+      <footer class="dialog-foot">
+        <button class="btn btn-secondary" id="a11y-reset" type="button" data-i18n="a11yReset">Atur ulang</button>
+        <button class="btn btn-primary" type="button" data-close-dialog data-i18n="a11yDone">selesai</button>
+      </footer>  
+    </form>
+  </dialog>
+
+  <script type="module" src="/src/ticTacToe.ts"></script>
 </body>
 </html>
