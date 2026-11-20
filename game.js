@@ -67,14 +67,14 @@ function evaluate(board, lines, me) {
         let theirs = 0;
         for (const i of line) {
             const v = board[i];
-            if (v === other)
+            if (v === me)
                 mine++;
             else if (v === other)
                 theirs++;
         }
         if (mine > 0 && theirs === 0)
             total += 10 ** mine;
-        else if (theirs > 0 && theirs === 0)
+        else if (theirs > 0 && mine === 0)
             total -= 10 ** theirs;
     }
     return total;

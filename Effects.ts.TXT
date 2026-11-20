@@ -1,0 +1,254 @@
+type Shape = 'rect' | 'dot';
+
+interface Particle {
+    x: number;
+  y: number;
+  vx: number; 
+  vy: number;
+  size: number;
+  rot: number;
+  vr: number; 
+  age: number;
+  life: number;
+  color: string;
+  shape: Shape;
+  gravity: number;
+  drag: number; 
+  sway: number; 
+  phase: number;
+}
+
+const MAX_PARTICLE = 700;
+
+const particles: Particle[] = []
+let canvas: HTMLCanvasElement | null = null;
+let pen: CanvasRenderingContext2D | null = null;
+let enabled = true;
+let rafId = 0;
+let lastTime = 0;
+let timers: number[] = [];
+
+export function initEffects(target: HTMLCanvasElement): void {
+    canvas = target;
+    pen = target.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize)
+}
+
+function resize(): void {
+    if (!canvas || !pen) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+
+    pen.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+export function setEffectEnabled(on: boolean): void {
+    enabled = on;
+    if (!on) clearEffects();
+}
+
+export function themeColor(name: string, fallback = "#ffffff"): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+function palette(): string[] {
+    return [themeColor("--x"), themeColor("--o"), themeColor("--accent"), "#ffffff"];
+}
+
+const rand = (min: number, max: number): number => min + Math.random() * (max - min);
+const pick = <T>(items: T[]): T => items[Math.floor(Math.random() * items.length)];
+
+
+function add(p: Particle): void {
+    if (particles.length >= MAX_PARTICLE) particles.shift();
+    particles.push(p);
+    if (rafId === 0) {
+        lastTime = performance.now();
+        rafId = requestAnimationFrame(frame);
+    }
+}
+
+function frame(now: number): void {
+    rafId = 0;
+    if (!pen) return;
+
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+
+    lastTime = now;
+
+    pen.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+     for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.age += dt;
+    if (p.age >= p.life) {
+      particles.splice(i, 1);
+      continue;
+        }
+
+         p.vy += p.gravity * dt;
+    const damping = Math.pow(p.drag, dt);
+    p.vx *= damping;
+    p.vy *= damping;
+    p.x += (p.vx + Math.sin(p.age * 3 + p.phase) * p.sway) * dt;
+    p.y += p.vy * dt;
+    p.rot += p.vr * dt;
+
+    
+    pen.globalAlpha = Math.min(1, (1 - p.age / p.life) * 3);
+    pen.fillStyle = p.color;
+
+    if (p.shape === "dot") {
+      pen.beginPath();
+      pen.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      pen.fill();
+    } else {
+      const flip = Math.max(0.15, Math.abs(Math.cos(p.age * 8 + p.phase)));
+      pen.save();
+      pen.translate(p.x, p.y);
+      pen.rotate(p.rot);
+      pen.fillRect(-p.size / 2, (-p.size * 0.55 * flip) / 2, p.size, p.size * 0.55 * flip);
+      pen.restore();
+    }
+  }
+  pen.globalAlpha = 1;
+
+  if (particles.length > 0) rafId = requestAnimationFrame(frame);
+}
+
+function schedule(ms: number, fn: () => void): void {
+    timers.push(
+        window.setTimeout(() => {
+            if (enabled) fn();
+        }, ms),
+    );
+}
+
+export function clearEffects(): void {
+    timers.forEach((id) => window.clearTimeout(id));
+    timers = [];
+    particles.length = 0;
+    if (rafId !== 0) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+    }
+    pen?.clearRect(0, 0, window.innerWidth, window.innerHeight);
+}
+
+export function sparkBurst(x: number, y: number, color: string, count = 14): void {
+  if (!enabled) return;
+  for (let i = 0; i < count; i++) {
+    const angle = rand(0, Math.PI * 2);
+    const speed = rand(120, 320);
+    add({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: rand(1.5, 3.2),
+      rot: 0, vr: 0, age: 0,
+      life: rand(0.35, 0.7),
+      color, shape: "dot",
+      gravity: 380, drag: 0.08, sway: 0, phase: 0,
+    });
+  }
+}
+
+export function confetti(x: number, y: number, count: number, power: number, angle: number, spread: number): void {
+  if (!enabled) return;
+  const colors = palette();
+  for (let i = 0; i < count; i++) {
+    const a = angle + rand(-spread / 2, spread / 2);
+    const speed = rand(500, 1100) * power;
+    add({
+      x, y,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      size: rand(6, 12),
+      rot: rand(0, Math.PI * 2),
+      vr: rand(-9, 9),
+      age: 0,
+      life: rand(2.2, 3.6),
+      color: pick(colors),
+      shape: "rect",
+      gravity: 900, drag: 0.1,
+      sway: rand(20, 60),
+      phase: rand(0, Math.PI * 2),
+    });
+  }
+}
+
+export function confettiCannons(): void {
+  if (!enabled) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  confetti(w * 0.1, h, 60, 1, -Math.PI / 3, 0.6);
+  schedule(120, () => confetti(w * 0.9, h, 60, 1, (-2 * Math.PI) / 3, 0.6));
+}
+
+
+function firework(x: number, y: number): void {
+  const color = pick(palette());
+  const count = 46;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + rand(-0.05, 0.05);
+    const speed = rand(180, 380);
+    add({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: rand(1.8, 3.2),
+      rot: 0, vr: 0, age: 0,
+      life: rand(1, 1.6),
+      color, shape: "dot",
+      gravity: 260, drag: 0.3, sway: 0, phase: 0,
+    });
+  }
+}
+
+export function bigCelebration(): void {
+  if (!enabled) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  confettiCannons();
+  schedule(350, () => confetti(w * 0.5, h * 0.1, 80, 0.5, Math.PI / 2, Math.PI));
+  [250, 650, 1050, 1450].forEach((ms) =>
+    schedule(ms, () => firework(rand(w * 0.15, w * 0.85), rand(h * 0.12, h * 0.45))),
+  );
+  schedule(900, () => confettiCannons());
+}
+
+export function ashFall(heavy = false): void {
+  if (!enabled) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const tones = ["#d4d4de", "#a0a0ae", "#74747f"];
+  const count = heavy ? 100 : 55;
+  for (let i = 0; i < count; i++) {
+    add({
+      x: rand(0, w),
+      y: rand(-60, h * 0.3),
+      vx: rand(-20, 20),
+      vy: rand(40, 120),
+      size: rand(1.5, 4),
+      rot: 0, vr: 0, age: 0,
+      life: rand(2.5, 4.5),
+      color: pick(tones),
+      shape: "dot",
+      gravity: 10, drag: 0.9,
+      sway: rand(15, 40),
+      phase: rand(0, Math.PI * 2),
+    });
+  }
+}
+
+export function vibrate(pattern: number | number[]): void {
+    if (!enabled) return;
+    try {
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(pattern);
+    } catch {
+        
+    }
+}

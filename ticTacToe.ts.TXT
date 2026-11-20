@@ -20,6 +20,31 @@ import {
   readSettingForm,
   writeSettingsForm,
 } from "./setting.js";
+
+import {
+  ROUND_LIMITS,
+  defaultPrefs,
+  loadPrefs,
+  readPrefsForm,
+  savePrefs,
+  writePrefsForm,
+  type RoundLimits,
+} from './Prefs.js';
+
+import { playSfx, setSound, unlockAudio } from './Sound.js';
+
+import {
+  ashFall,
+  bigCelebration,
+  clearEffects,
+  confettiCannons,
+  initEffects,
+  setEffectEnabled,
+  sparkBurst,
+  themeColor,
+  vibrate,
+} from './Effects.js'
+
 import { readStorage, writeStorage } from './storage.js';
 
 
@@ -37,19 +62,36 @@ const boardEl = getEl<HTMLDivElement>("board");
 const statusEl = getEl<HTMLParagraphElement>("status");
 const announcerEl = getEl<HTMLParagraphElement>("announcer");
 const ruleHintEl = getEl<HTMLParagraphElement>("rule-hint");
+const roundInfoEl = getEl<HTMLParagraphElement>("round-info")
 const resetBtn = getEl<HTMLButtonElement>("reset");
 const scoreWinEl = getEl<HTMLElement>("score-win");
 const scoreDrawEl = getEl<HTMLElement>("score-draw");
 const scoreLoseEl = getEl<HTMLElement>("score-lose");
+
+const flashEl = getEl<HTMLDivElement>("flash");
  
 const langButtons = getAll<HTMLButtonElement>("[data-lang]");
 const sizeButtons = getAll<HTMLButtonElement>("[data-size]");
 const levelButtons = getAll<HTMLButtonElement>("[data-level]");
+const limitButtons = getAll<HTMLButtonElement>("[data-limit]");
  
 const dialog = getEl<HTMLDialogElement>("a11y-dialog");
 const a11yForm = getEl<HTMLFormElement>("a11y-form");
 const a11yOpenBtn = getEl<HTMLButtonElement>("a11y-open");
 const a11yResetBtn = getEl<HTMLButtonElement>("a11y-reset");
+
+const gameDialog = getEl<HTMLDialogElement>("game-dialog");
+const gameForm = getEl<HTMLFormElement>("game-form");
+const gameOpenBtn = getEl<HTMLButtonElement>("game-open");
+const gameResetBtn = getEl<HTMLButtonElement>("game-reset");
+const volumeOutEl = getEl<HTMLOutputElement>("volume-out");
+
+const matchDialog = getEl<HTMLDialogElement>("match-dialog");
+const matchTitleEl = getEl<HTMLHeadingElement>("match-title");
+const matchSummaryEl = getEl<HTMLParagraphElement>("match-summary");
+const matchTrophyEl = getEl<HTMLSpanElement>("match-trophy");
+const matchAgainBtn = getEl<HTMLButtonElement>("match-again");
+
  
 const LANG_KEY = "ttt:lang";
 
@@ -94,6 +136,46 @@ let statusKind: StatusKind = "";
 const score: Record<BoardSize, Score> = {
   3: { win: 0, draw: 0, lose: 0 },
   5: { win: 0, draw: 0, lose: 0 },
+}
+
+let settings = defaultSettings();
+let prefs = defaultPrefs();
+
+function playedRounds(): number {
+    const s = score[size];
+    return s.win + s.draw + s.lose
+}
+
+function isMatchOver(): boolean {
+  return prefs.roundLimit !== 0 && playedRounds() >= prefs.roundLimit
+}
+
+function resetStats(target: BoardSize | "all"): void {
+  const sizes: BoardSize[] = target === "all" ? [3, 5] : [target];
+  sizes.forEach((s) => {
+    score[s] = { win: 0, draw: 0, lose: 0 };
+  });
+}
+
+function matchOutcome(): 'win' | 'lose' | 'draw' {
+  const s = score[size];
+  if (s.win > s.lose) return "win";
+  if (s.win < s.lose) return "lose";
+  return "draw";
+}
+
+function renderRoundInfo(): void {
+  const over = isMatchOver();
+  if (over) {
+    roundInfoEl.textContent = t("roundInfoDone");
+  } else {
+    const current = gameOver ? playedRounds() : playedRounds() + 1;
+    roundInfoEl.textContent = 
+      prefs.roundLimit === 0
+        ? t('roundInfoInf', { current })
+        : t('roundInfo', { current, total: prefs.roundLimit });
+  }
+  resetBtn.textContent = t(over ? "newMatch" : "resetGame");
 }
 
 function setStatus(key: Tkey, kind: StatusKind = ""): void {
@@ -148,10 +230,27 @@ boolean): void {
   button.forEach((button) => button.setAttribute("aria-pressed", String(isActive(button))));
 }
 
+function renderMatchDialog(): void {
+  const s = score[size];
+  const outcome = matchOutcome();
+  matchTitleEl.textContent = t(
+    outcome === 'win' ? "matchWin" : outcome === 'lose' ? "matchLose" : 'matchDraw',
+  );
+  matchTrophyEl.textContent = outcome === "win" ? "🏆" : outcome === "lose" ? "🤖" : "🤝";
+  matchSummaryEl.textContent = t("matchSummary", {
+    win: s.win,
+    draw: s.draw,
+    lose: s.lose,
+    total: playedRounds(),
+  });
+}
+
 function renderTexts(): void {
   renderStatus();
+  renderRoundInfo();
   ruleHintEl.textContent = t(size === 3 ? "ruleHint3" : "ruleHint5");
   boardEl.setAttribute("aria-label", t("boardLabel", { size }));
+  if (matchDialog.open) renderMatchDialog();
   renderAll();
 }
 
@@ -234,7 +333,7 @@ document.addEventListener("keydown", (event) => {
 
   const selector =
     'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  const focusScope: ParentNode = dialog.open ? dialog : document;
+  const focusScope: ParentNode = document.querySelector("dialog[open]") ?? document;
   const focusable = Array.from(focusScope.querySelectorAll<HTMLElement>(selector)).filter(
     (el) => el.tabIndex >= 0 && el.getClientRects().length > 0,
   );
@@ -253,6 +352,107 @@ document.addEventListener("keydown", (event) => {
 });
 
 
+function refreshEffects(): void {
+  setEffectEnabled(prefs.effectsOn && !settings.reduceMotion);
+}
+
+function applyPrefs(): void {
+  setSound(prefs.soundOn, prefs.volume / 100);
+  refreshEffects();
+}
+
+let winLineEl: HTMLDivElement | null = null
+let winLineCells: number[] = [];
+
+function placeWinLine(): void {
+  if (!winLineEl || winLineCells.length === 0) return;
+  const first = cellEls[winLineCells[0]];
+  const last = cellEls[winLineCells[winLineCells.length - 1]];
+  if (!first || !last) return;
+
+  const x1 = first.offsetLeft + first.offsetWidth / 2;
+  const y1 = first.offsetTop + first.offsetHeight / 2;
+  const x2 = last.offsetLeft + last.offsetWidth / 2;
+  const y2 = last.offsetTop + last.offsetHeight / 2;
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy);
+  const extend = first.offsetWidth * 0.32; 
+  const startX = x1 - (dx / length) * extend;
+  const startY = y1 - (dy / length) * extend;
+
+  winLineEl.style.left = `${startX}px`;
+  winLineEl.style.top = `${startY}px`;
+  winLineEl.style.width = `${length + extend * 2}px`;
+  winLineEl.style.setProperty("--angle", `${(Math.atan2(dy, dx) * 180) / Math.PI}deg`);
+}
+
+function showWinLine(line: number[]): void {
+  removeWinLine();
+  winLineCells = line;
+  winLineEl = document.createElement("div");
+  winLineEl.className = "win-line";
+  boardEl.appendChild(winLineEl);
+  placeWinLine();
+}
+
+function removeWinLine(): void {
+  winLineEl?.remove();
+  winLineEl = null;
+  winLineCells = [];
+}
+
+new ResizeObserver(() => placeWinLine()).observe(boardEl);
+
+function playFlash(kind: "flash-win" | "flash-lose"): void {
+  flashEl.className = "flash";
+  void flashEl.offsetWidth;
+  flashEl.classList.add(kind);
+}
+
+function clearResultFx(): void {
+  clearEffects();
+  removeWinLine();
+  boardEl.classList.remove("fx-win", "fx-lose", "has-winner");
+  flashEl.className = "flash";
+}
+
+function playResultEffects(winner: Player | null, line: number[] | null): void {
+  if (winner === HUMAN) {
+    playSfx("win");
+    vibrate([60, 40, 60, 40, 140]);
+    boardEl.classList.add("fx-win", "has-winner");
+    playFlash("flash-win");
+    confettiCannons();
+  } else if (winner === BOT) {
+    playSfx("lose");
+    vibrate(350);
+    boardEl.classList.add("fx-lose", "has-winner");
+    playFlash("flash-lose");
+    ashFall();
+  } else {
+    playSfx("draw");
+  }
+  if (line) showWinLine(line);
+}
+
+function showMatchResult(): void {
+  renderMatchDialog();
+  const outcome = matchOutcome();
+  if (outcome === "win") {
+    playSfx("matchWin");
+    vibrate([80, 50, 80, 50, 80, 50, 240]);
+    bigCelebration();
+  } else if (outcome === "lose") {
+    playSfx("matchLose");
+    ashFall(true);
+  } else {
+    playSfx("draw");
+  }
+  openDialogEl(matchDialog);
+}
+
 function finishIsOver(): boolean {
   const result = findWinner(board, lines);
 
@@ -262,22 +462,39 @@ function finishIsOver(): boolean {
     const humanWon = result.winner === HUMAN;
     score[size][humanWon ? "win" : "lose"]++;
     setStatus(humanWon ? "statusYouWin" : "statusBotWins", humanWon ? "win" : "lose");
+    playResultEffects(result.winner, result.line);
   } else if (emptyCells(board).length === 0) {
     gameOver = true;
     score[size].draw++;
     setStatus("statusDraw");
+    playResultEffects(null, null);
   } else {
     return false;
   }
   botStart = !botStart;
   renderAll();
   renderScore();
+  renderRoundInfo();
+
+  if (isMatchOver()) {
+    const thisRound = round;
+    window.setTimeout(() => {
+      if (thisRound === round && isMatchOver()) showMatchResult();
+    }, 1500);
+  }
   return true;
 }
 
 function placeMark(index: number, player: Player): void {
   board[index] = player;
   renderCell(index);
+  playSfx(player === HUMAN ? "placeX" : "placeO");
+  const rect = cellEls[index].getBoundingClientRect();
+  sparkBurst(
+    rect.left + rect.width / 2,
+    rect.top + rect.height / 2,
+    themeColor(player === HUMAN ? "--x" : "--o"),
+  );
   const { row, col } = position(index);
   announce(t(player === HUMAN ? "moveHuman" : "moveBot", { mark: player, row, col }));
 }
@@ -309,14 +526,22 @@ function botTurn(): void {
 
 function newGame(): void {
   round++;
+  clearResultFx();
   board = Array<Cell>(size * size).fill(null);
   gameOver = false;
   botThinking = false;
   cellEls.forEach((el) => el.classList.remove("win"));
   renderAll();
+  renderScore();
+  renderRoundInfo();
 
   if (botStart) botTurn();
   else setStatus("statusYourTurn");
+}
+
+function newMatch(): void {
+  resetStats(size);
+  newGame();
 }
 
 function setSize(next: BoardSize): void {
@@ -324,6 +549,7 @@ function setSize(next: BoardSize): void {
   size = next;
   lines = buildLines(size, winLength(size));
   setPressed(sizeButtons, (b) => b.dataset.size === String(size));
+  playSfx("tick");
   buildBoard();
   renderScore();
   newGame();
@@ -334,28 +560,55 @@ function setDifficulty(next: Difficulty): void {
   if (next === difficulty) return;
   difficulty = next;
   setPressed(levelButtons, (b) => b.dataset.level === difficulty);
+  playSfx("tick");
+  newGame();
+}
+
+function setRoundLimit(next: RoundLimits): void {
+  if (next === prefs.roundLimit) return;
+  prefs = { ...prefs, roundLimit: next };
+  savePrefs(prefs);
+  setPressed(limitButtons, (b) => b.dataset.limit === String(next));
+  playSfx("tick")
+  resetStats("all")
   newGame();
 }
 
 function applyLanguage(lang: Lang, persist: boolean): void {
   setLang(lang);
-  if (persist) writeStorage(LANG_KEY, lang);
+  if (persist) {
+  writeStorage(LANG_KEY, lang);
+  playSfx("tick")
+  }
   translatePage();
   setPressed(langButtons, (b) => b.dataset.lang === lang);
   renderTexts();
 }
 
-let settings = defaultSettings();
 
-function openDialog(): void {
-  if(dialog.open) return;
-  if (typeof dialog.showModal === "function") dialog.showModal();
-  else dialog.setAttribute("open", "")
+function openDialogEl(el: HTMLDialogElement): void {
+  if(el.open) return;
+  if (typeof el.showModal === "function") el.showModal();
+  else el.setAttribute("open", "")
 } 
 
-function closeDialog(): void {
-  if (typeof dialog.close === "function") dialog.close();
-  else dialog.removeAttribute("open");
+function closeDialogEl(el: HTMLDialogElement): void {
+  if (typeof el.close === "function") el.close();
+  else el.removeAttribute("open");
+}
+
+function initDialogs(): void {
+  getAll<HTMLDialogElement>("dialog").forEach((el) => {
+    el.addEventListener("click", (event) => {
+      if (event.target === el) closeDialogEl(el);
+    });
+  });
+  getAll("[data-close-dialog]").forEach((el) =>
+  el.addEventListener("click", () => {
+    const owner = el.closest("dialog");
+    if (owner) closeDialogEl(owner)
+  }),
+  );
 }
 
 function initAccessibility(): boolean {
@@ -368,15 +621,15 @@ function initAccessibility(): boolean {
     el.innerHTML = markSvg("X") + markSvg("O");
   });
 
-  a11yOpenBtn.addEventListener("click", openDialog);
-  getAll("[data-close-dialog]").forEach((el) => el.addEventListener("click", closeDialog));
-
+  a11yOpenBtn.addEventListener("click", () => openDialogEl(dialog));
+  
   dialog.addEventListener('close', () => saveSettings(settings));
 
   a11yForm.addEventListener("change", () => {
     settings = readSettingForm(a11yForm);
     applySetting(settings);
     saveSettings(settings);
+    refreshEffects();
   });
   a11yForm.addEventListener("submit", (event) => event.preventDefault());
  
@@ -385,10 +638,46 @@ function initAccessibility(): boolean {
     writeSettingsForm(a11yForm, settings);
     applySetting(settings);
     saveSettings(settings);
+    refreshEffects();
   });
   return loaded.firstVisit;
 }
 
+function iniGameSetting(): void {
+  prefs = loadPrefs();
+  writePrefsForm(gameForm, prefs);
+  volumeOutEl.textContent = `${prefs.volume}%`
+  setPressed(limitButtons, (b) => b.dataset.limit === String(prefs.roundLimit));
+  applyPrefs();
+
+  gameOpenBtn.addEventListener("click", () => openDialogEl(gameDialog));
+  gameDialog.addEventListener("close", () => savePrefs(prefs));
+}
+
+gameForm.addEventListener("input", (event) => {
+  const input = event.target;
+  if (input instanceof HTMLInputElement && input.name === "volume") {
+    volumeOutEl.textContent = `${input.value}`;
+  }
+});
+
+gameForm.addEventListener("change", () => {
+    prefs = readPrefsForm(gameForm, prefs);
+    volumeOutEl.textContent = `${prefs.volume}%`;
+    savePrefs(prefs);
+    applyPrefs();
+    playSfx("tick"); 
+  });
+gameForm.addEventListener("submit", (event) => event.preventDefault());
+
+gameResetBtn.addEventListener("click", () => {
+    prefs = { ...defaultPrefs(), roundLimit: prefs.roundLimit };
+    writePrefsForm(gameForm, prefs);
+    volumeOutEl.textContent = `${prefs.volume}%`;
+    savePrefs(prefs);
+    applyPrefs();
+    playSfx("tick");
+})
 
 langButtons.forEach((button) =>
   button.addEventListener("click", () => applyLanguage(button.dataset.lang === "en" ? "en" : "id", true)),
@@ -399,13 +688,38 @@ sizeButtons.forEach((button) =>
 levelButtons.forEach((button) =>
   button.addEventListener("click", () => setDifficulty(button.dataset.level === "easy" ? "easy" : "hard")),
 );
-resetBtn.addEventListener("click", newGame);
- 
+
+limitButtons.forEach((button) =>
+  button.addEventListener("click", () => {
+    const value = Number(button.dataset.limit);
+    const limit = ROUND_LIMITS.find((option) => option === value);
+    if (limit !== undefined) setRoundLimit(limit);
+  }),
+);
+
+resetBtn.addEventListener("click", () => {
+  playSfx("tick")
+  if (isMatchOver()) newMatch();
+  else newGame();
+});
+
+matchAgainBtn.addEventListener("click", () => {
+  closeDialogEl(matchDialog);
+  playSfx("tick");
+  newMatch();
+});
+
+document.addEventListener("pointerdown", unlockAudio);
+document.addEventListener("keydown", unlockAudio);
+
+initEffects(getEl<HTMLCanvasElement>("fx"));
+initDialogs();
 const firstVisit = initAccessibility();
+iniGameSetting();
 buildBoard();
 renderScore();
 applyLanguage(detectLang(readStorage(LANG_KEY)), false);
 newGame();
  
 // Pemain baru langsung ditawari pengaturan aksesibilitas saat pertama membuka game.
-if (firstVisit) openDialog();
+if (firstVisit) openDialogEl(dialog);

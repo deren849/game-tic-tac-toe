@@ -1,10 +1,18 @@
+/* =========================================================
+   1. WARNA / TEMA
+   Semua warna disimpan sebagai variabel (--nama). Mode warna, kontras tinggi,
+   dan ukuran teks cukup mengganti variabel ini lewat atribut data-* di <html>
+   (diatur oleh settings.ts), tanpa menyentuh komponen lain.
+   ========================================================= */
+
+/* Palet warna X, O, dan aksen. Selektor [data-palette] dipakai untuk contoh warna di dialog. */
 :root,
 [data-palette="default"] {
   --x: #ff8fa3;
   --o: #7fe8c8;
   --accent: #b9a7ff;
 }
- 
+
 /* Merah-hijau (protanopia/deuteranopia): palet Okabe-Ito, oranye vs biru langit */
 :root[data-color="redGreen"],
 [data-palette="redGreen"] {
@@ -12,7 +20,7 @@
   --o: #56b4e9;
   --accent: #f0e442;
 }
- 
+
 /* Biru-kuning (tritanopia): merah muda vs hijau kebiruan */
 :root[data-color="blueYellow"],
 [data-palette="blueYellow"] {
@@ -20,7 +28,7 @@
   --o: #00cfc2;
   --accent: #ff9f6b;
 }
- 
+
 /* Hitam-putih: dibedakan lewat terang-gelap, bukan warna */
 :root[data-color="mono"],
 [data-palette="mono"] {
@@ -28,7 +36,7 @@
   --o: #a6a6a6;
   --accent: #d4d4d4;
 }
- 
+
 :root {
   color-scheme: dark;
   --bg-1: #1b1a2e;
@@ -45,7 +53,7 @@
   --glow-a: color-mix(in srgb, var(--accent) 24%, transparent);
   --glow-b: color-mix(in srgb, var(--o) 16%, transparent);
 }
- 
+
 :root[data-color="mono"] {
   --bg-1: #141414;
   --bg-2: #262626;
@@ -53,7 +61,7 @@
   --on-accent: #111111;
   --muted: #bdbdbd;
 }
- 
+
 /* Kontras tinggi: hitam pekat, putih pekat, garis tebal, tanpa efek cahaya */
 :root[data-contrast="high"] {
   --bg-1: #000000;
@@ -69,13 +77,13 @@
   --glow-a: transparent;
   --glow-b: transparent;
 }
- 
+
 :root[data-contrast="high"][data-color="default"] {
   --x: #ffd400;
   --o: #00e5ff;
   --accent: #ffd400;
 }
- 
+
 /* Ukuran teks: semua ukuran di file ini memakai rem, jadi seluruh tampilan ikut membesar */
 html {
   -webkit-text-size-adjust: 100%;
@@ -87,22 +95,22 @@ html[data-text="large"] {
 html[data-text="xlarge"] {
   font-size: 150%;
 }
- 
+
 /* =========================================================
    2. DASAR
    ========================================================= */
- 
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
- 
+
 * {
   margin: 0;
   padding: 0;
 }
- 
+
 body {
   min-height: 100vh;
   min-height: 100dvh;
@@ -120,18 +128,18 @@ body {
     linear-gradient(135deg, var(--bg-1), var(--bg-2));
   background-attachment: fixed;
 }
- 
+
 html[data-font="readable"] body {
   font-family: Verdana, Tahoma, "Trebuchet MS", sans-serif;
   letter-spacing: 0.04em;
   word-spacing: 0.1em;
   line-height: 1.7;
 }
- 
+
 body:has(dialog[open]) {
   overflow: hidden; /* halaman di belakang dialog tidak ikut bergulir */
 }
- 
+
 button,
 input {
   font: inherit;
@@ -139,18 +147,18 @@ input {
   word-spacing: inherit;
   color: inherit;
 }
- 
+
 button {
   touch-action: manipulation; /* mencegah zoom saat ketuk dua kali di HP */
   -webkit-tap-highlight-color: transparent;
 }
- 
+
 /* Fokus keyboard harus selalu terlihat jelas */
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
- 
+
 /* Teks yang hanya dibaca pembaca layar */
 .sr-only {
   position: absolute;
@@ -160,7 +168,7 @@ button {
   clip-path: inset(50%);
   white-space: nowrap;
 }
- 
+
 .icon {
   width: 1.25rem;
   height: 1.25rem;
@@ -171,13 +179,13 @@ button {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
- 
+
 /* =========================================================
    3. KARTU UTAMA
    ========================================================= */
- 
+
 .card {
-  width: min(27rem, 100%);
+  width: min(34rem, 100%);
   padding: clamp(1rem, 4.5vw, 1.75rem);
   text-align: center;
   background: var(--surface);
@@ -187,7 +195,13 @@ button {
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.35);
 }
- 
+
+.language-button {
+    flex: 0 0 auto;
+    margin: 0;
+    transform: translateX(3.20rem);
+  }
+
 .topbar {
   display: flex;
   flex-wrap: wrap;
@@ -196,18 +210,32 @@ button {
   gap: 0.6rem;
   margin-bottom: 0.9rem;
 }
- 
+
+.topbar-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.topbar-preferences {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .title {
   font-size: clamp(1.6rem, 7vw, 2rem);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.02em;
 }
- 
+
 .title span {
   color: var(--accent);
 }
- 
+
 .status {
   margin: 0.35rem 0 1rem;
   min-height: 1.5em;
@@ -215,7 +243,7 @@ button {
   color: var(--muted);
   transition: color 0.3s;
 }
- 
+
 .status.win {
   color: var(--o);
   font-weight: 700;
@@ -224,17 +252,17 @@ button {
   color: var(--x);
   font-weight: 700;
 }
- 
+
 .hint {
   margin-top: 0.8rem;
   font-size: 0.85rem;
   color: var(--muted);
 }
- 
+
 /* =========================================================
    4. TOMBOL
    ========================================================= */
- 
+
 /* Tombol bulat (Aksesibilitas) */
 .pill {
   display: inline-flex;
@@ -250,7 +278,7 @@ button {
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
 }
- 
+
 /* Pilihan bergaya segmen (bahasa, ukuran papan, tingkat kesulitan) */
 .seg {
   display: inline-flex;
@@ -260,7 +288,7 @@ button {
   border: var(--bw) solid var(--border);
   border-radius: 99px;
 }
- 
+
 .seg-btn {
   min-width: 3rem;
   min-height: 2.4rem;
@@ -273,14 +301,14 @@ button {
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
- 
+
 /* Yang aktif dibedakan lewat latar penuh + huruf tebal, bukan hanya warna */
 .seg-btn[aria-pressed="true"] {
   color: var(--on-accent);
   background: var(--accent);
   font-weight: 700;
 }
- 
+
 .btn {
   min-height: 3rem;
   padding: 0 1.25rem;
@@ -290,26 +318,26 @@ button {
   cursor: pointer;
   transition: transform 0.15s, filter 0.2s, background 0.2s;
 }
- 
+
 .btn-block {
   width: 100%;
 }
- 
+
 .btn-primary {
   color: var(--on-accent);
   background: linear-gradient(135deg, var(--accent), var(--o));
 }
- 
+
 .btn-secondary {
   background: var(--surface);
   border-color: var(--border);
 }
- 
+
 :root[data-contrast="high"] .btn-primary {
   background: var(--accent);
   border-color: var(--text);
 }
- 
+
 .icon-btn {
   display: grid;
   place-items: center;
@@ -321,7 +349,7 @@ button {
   border-radius: 50%;
   cursor: pointer;
 }
- 
+
 /* Efek hover hanya untuk perangkat yang punya mouse (di layar sentuh hover suka "menempel") */
 @media (hover: hover) {
   .pill:hover,
@@ -338,17 +366,18 @@ button {
     filter: brightness(1.08);
   }
 }
- 
+
 .btn:active,
 .pill:active {
   transform: scale(0.97);
 }
- 
+
 /* =========================================================
    5. PAPAN
    ========================================================= */
- 
+
 .board {
+  position: relative; /* acuan posisi untuk garis kemenangan */
   --n: 3; /* jumlah kolom, diisi dari TypeScript */
   --gap: 0.6rem;
   display: grid;
@@ -359,11 +388,11 @@ button {
   margin-inline: auto;
   animation: board-in 0.3s ease-out;
 }
- 
+
 .board[data-size="5"] {
   --gap: 0.4rem;
 }
- 
+
 .cell {
   position: relative;
   display: grid;
@@ -375,28 +404,28 @@ button {
   border: var(--bw) solid var(--border);
   border-radius: 1.1rem;
   cursor: pointer;
-  transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+  transition: transform 0.15s, background 0.2s, box-shadow 0.2s, opacity 0.4s;
 }
- 
+
 .board[data-size="5"] .cell {
   border-radius: 0.7rem;
 }
- 
+
 .cell[aria-disabled="true"] {
   cursor: default;
 }
- 
+
 @media (hover: hover) {
   .cell:not([aria-disabled="true"]):hover {
     background: var(--surface-2);
     transform: translateY(-2px);
   }
 }
- 
+
 .cell:not([aria-disabled="true"]):active {
   transform: scale(0.95);
 }
- 
+
 /* Kotak pemenang: latar, cahaya, DAN garis tepi tebal (tidak hanya mengandalkan warna) */
 .cell.win {
   background: color-mix(in srgb, var(--accent) 26%, transparent);
@@ -405,11 +434,11 @@ button {
     inset 0 0 0 0.2rem var(--text);
   animation: pulse 0.9s ease-in-out infinite alternate;
 }
- 
+
 /* =========================================================
    6. TANDA X DAN O (SVG)
    ========================================================= */
- 
+
 .mark {
   display: block;
   width: 72%;
@@ -420,23 +449,23 @@ button {
   stroke-linejoin: round;
   overflow: visible;
 }
- 
+
 .mark-x {
   color: var(--x);
 }
 .mark-o {
   color: var(--o);
 }
- 
+
 .mark-x,
 .mark-o {
   filter: drop-shadow(0 0 0.3rem currentColor);
 }
- 
+
 :root[data-contrast="high"] .mark {
   filter: none;
 }
- 
+
 /* Garis "digambar" dari awal sampai akhir. pathLength=1 membuat panjang garis dihitung sebagai 1. */
 .mark path,
 .mark circle {
@@ -445,27 +474,27 @@ button {
   stroke-dashoffset: 0;
   animation: draw 0.35s ease-out both;
 }
- 
+
 .mark-x path:nth-child(2) {
   animation-delay: 0.15s;
 }
- 
+
 /* Contoh tanda di pilihan mode warna tidak perlu beranimasi */
 .swatch .mark path,
 .swatch .mark circle {
   animation: none;
 }
- 
+
 /* =========================================================
    7. KONTROL DAN SKOR
    ========================================================= */
- 
+
 .controls {
   display: grid;
   gap: 0.75rem;
   margin-top: 1.25rem;
 }
- 
+
 .field {
   display: flex;
   flex-wrap: wrap;
@@ -473,40 +502,40 @@ button {
   justify-content: space-between;
   gap: 0.5rem 0.75rem;
 }
- 
+
 .field-label {
   font-size: 0.9rem;
   color: var(--muted);
 }
- 
+
 .scoreboard {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
   margin: 1.1rem 0;
 }
- 
+
 .score {
   padding: 0.6rem 0.25rem;
   background: var(--surface);
   border: var(--bw) solid transparent;
   border-radius: 0.9rem;
 }
- 
+
 :root[data-contrast="high"] .score {
   border-color: var(--border);
 }
- 
+
 .score-label {
   display: block;
   font-size: 0.78rem;
   color: var(--muted);
 }
- 
+
 .score strong {
   font-size: 1.4rem;
 }
- 
+
 .sym {
   font-weight: 800;
 }
@@ -516,11 +545,11 @@ button {
 .sym-o {
   color: var(--o);
 }
- 
+
 /* =========================================================
    8. DIALOG AKSESIBILITAS
    ========================================================= */
- 
+
 dialog {
   width: min(34rem, calc(100% - 1.5rem));
   max-height: calc(100dvh - 1.5rem);
@@ -533,18 +562,18 @@ dialog {
   box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.55);
   overflow: hidden;
 }
- 
+
 dialog[open] {
   display: flex;
   flex-direction: column;
   animation: dialog-in 0.22s ease-out;
 }
- 
+
 dialog::backdrop {
   background: rgba(10, 9, 24, 0.75);
   backdrop-filter: blur(4px);
 }
- 
+
 .dialog-inner {
   display: flex;
   flex-direction: column;
@@ -552,7 +581,7 @@ dialog::backdrop {
   max-height: calc(100dvh - 1.5rem);
   text-align: left;
 }
- 
+
 .dialog-head {
   display: flex;
   align-items: center;
@@ -561,12 +590,12 @@ dialog::backdrop {
   padding: 1.1rem 1.25rem 0.9rem;
   border-bottom: var(--bw) solid var(--border);
 }
- 
+
 .dialog-head h2 {
   font-size: 1.15rem;
   line-height: 1.3;
 }
- 
+
 .dialog-body {
   flex: 1;
   min-height: 0;
@@ -576,7 +605,7 @@ dialog::backdrop {
   display: grid;
   gap: 1.25rem;
 }
- 
+
 .dialog-foot {
   display: flex;
   flex-wrap: wrap;
@@ -584,17 +613,17 @@ dialog::backdrop {
   padding: 0.9rem 1.25rem calc(0.9rem + env(safe-area-inset-bottom));
   border-top: var(--bw) solid var(--border);
 }
- 
+
 .dialog-foot .btn {
   flex: 1 1 8rem;
 }
- 
+
 .intro,
 .note {
   font-size: 0.88rem;
   color: var(--muted);
 }
- 
+
 .group {
   display: grid;
   grid-template-columns: minmax(0, 1fr); /* isi tidak boleh melebihi lebar dialog */
@@ -602,7 +631,7 @@ dialog::backdrop {
   border: 0;
   min-width: 0;
 }
- 
+
 .group legend,
 .group h3 {
   margin-bottom: 0.2rem;
@@ -610,7 +639,7 @@ dialog::backdrop {
   font-size: 0.95rem;
   font-weight: 700;
 }
- 
+
 /* Pilihan mode warna: kartu dengan contoh X dan O */
 .options {
   display: grid;
@@ -618,7 +647,7 @@ dialog::backdrop {
   grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
   gap: 0.6rem;
 }
- 
+
 .option {
   position: relative;
   display: flex;
@@ -631,7 +660,7 @@ dialog::backdrop {
   border-radius: 1rem;
   cursor: pointer;
 }
- 
+
 /* Input asli disembunyikan secara visual tapi tetap bisa difokuskan keyboard & dibaca pembaca layar */
 .option input,
 .seg-radio input {
@@ -643,13 +672,13 @@ dialog::backdrop {
   margin: 0;
   cursor: pointer;
 }
- 
+
 .option:has(input:checked) {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
- 
+
 /* Tanda centang: pilihan aktif terlihat tanpa bergantung pada warna */
 .option:has(input:checked)::after {
   content: "✓";
@@ -658,21 +687,21 @@ dialog::backdrop {
   font-weight: 800;
   color: var(--accent);
 }
- 
+
 .option:has(input:focus-visible),
 .seg-radio label:has(input:focus-visible),
 .toggle:has(input:focus-visible) {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
- 
+
 .option-text {
   min-width: 0;
   font-size: 0.9rem;
   line-height: 1.3;
   overflow-wrap: anywhere; /* kata panjang boleh dipatah daripada keluar dari kartu */
 }
- 
+
 .swatch {
   display: inline-flex;
   flex: none;
@@ -682,13 +711,13 @@ dialog::backdrop {
   border: 1px solid var(--border);
   border-radius: 0.7rem;
 }
- 
+
 .swatch .mark {
   width: 1.4rem;
   height: 1.4rem;
   filter: none;
 }
- 
+
 /* Ukuran teks: tiga pilihan berjajar */
 .seg-radio {
   display: grid;
@@ -696,7 +725,7 @@ dialog::backdrop {
   grid-template-columns: repeat(auto-fit, minmax(min(5rem, 100%), 1fr));
   gap: 0.5rem;
 }
- 
+
 .seg-radio label {
   position: relative;
   display: grid;
@@ -710,14 +739,14 @@ dialog::backdrop {
   border-radius: 0.9rem;
   cursor: pointer;
 }
- 
+
 .seg-radio label:has(input:checked) {
   color: var(--on-accent);
   font-weight: 700;
   background: var(--accent);
   border-color: var(--accent);
 }
- 
+
 /* Saklar (toggle) */
 .toggle {
   display: flex;
@@ -731,22 +760,22 @@ dialog::backdrop {
   border-radius: 1rem;
   cursor: pointer;
 }
- 
+
 .toggle-text {
   display: grid;
   gap: 0.1rem;
 }
- 
+
 .toggle-title {
   font-size: 0.92rem;
   font-weight: 600;
 }
- 
+
 .toggle-hint {
   font-size: 0.8rem;
   color: var(--muted);
 }
- 
+
 .toggle input {
   appearance: none;
   position: relative;
@@ -760,7 +789,7 @@ dialog::backdrop {
   cursor: pointer;
   transition: background 0.2s;
 }
- 
+
 .toggle input::before {
   content: "";
   position: absolute;
@@ -773,26 +802,26 @@ dialog::backdrop {
   transform: translateY(-50%);
   transition: transform 0.2s;
 }
- 
+
 .toggle input:checked {
   background: var(--accent);
   border-color: var(--accent);
 }
- 
+
 /* Saat aktif, bulatan bergeser dan berubah gelap: dua petunjuk selain warna */
 .toggle input:checked::before {
   background: var(--on-accent);
   transform: translate(1.2rem, -50%);
 }
- 
+
 .info .note {
   line-height: 1.6;
 }
- 
+
 /* =========================================================
    9. ANIMASI
    ========================================================= */
- 
+
 @keyframes draw {
   /* mulai dari 1.2 (bukan 1) supaya ujung garis yang membulat tidak muncul sebagai titik di awal */
   from {
@@ -802,7 +831,7 @@ dialog::backdrop {
     stroke-dashoffset: 0;
   }
 }
- 
+
 @keyframes pulse {
   from {
     transform: scale(1);
@@ -811,7 +840,7 @@ dialog::backdrop {
     transform: scale(1.05);
   }
 }
- 
+
 @keyframes board-in {
   from {
     opacity: 0;
@@ -822,7 +851,7 @@ dialog::backdrop {
     transform: scale(1);
   }
 }
- 
+
 @keyframes dialog-in {
   from {
     opacity: 0;
@@ -833,7 +862,7 @@ dialog::backdrop {
     transform: translateY(0);
   }
 }
- 
+
 /* Mode "Kurangi animasi": semua animasi dan transisi dimatikan.
    Tanda X/O tetap tampil utuh karena kondisi akhir animasi adalah kondisi normalnya. */
 html[data-motion="reduce"] *,
@@ -842,12 +871,327 @@ html[data-motion="reduce"] *::after {
   animation: none !important;
   transition: none !important;
 }
- 
+
+/* =========================================================
+   11. FITUR BARU: RONDE, EFEK MENANG/KALAH, PENGATURAN GAME
+   ========================================================= */
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.round-info {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* --- Slider volume --- */
+.slider {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--surface);
+  border: var(--bw) solid var(--border);
+  border-radius: 1rem;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.slider input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: 1.75rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.slider output {
+  min-width: 3ch;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--muted);
+}
+
+/* --- Lapisan efek --- */
+#fx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* klik tetap tembus ke game */
+  z-index: 50;
+}
+
+.flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 40;
+}
+
+/* Menang: cahaya aksen dari tengah. Kalah: layar menggelap di tepi (bukan merah, supaya tidak bergantung pada warna). */
+.flash.flash-win {
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 65%);
+  animation: flash-in-out 0.9s ease-out;
+}
+
+.flash.flash-lose {
+  background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.72) 100%);
+  animation: flash-in-out 1.2s ease-out;
+}
+
+/* --- Papan saat ada pemenang --- */
+.board.fx-win {
+  animation: board-win 0.8s ease-out;
+}
+
+.board.fx-lose {
+  animation: board-shake 0.6s ease-in-out;
+}
+
+/* Kotak yang bukan bagian garis kemenangan diredupkan supaya garisnya menonjol */
+.board.has-winner .cell:not(.win) {
+  opacity: 0.4;
+}
+
+.win-line {
+  position: absolute;
+  height: 0.5rem;
+  margin-top: -0.25rem; /* setengah tinggi, supaya garis tepat di tengah kotak */
+  border-radius: 99px;
+  background: var(--text);
+  box-shadow: 0 0 1rem var(--accent), 0 0 0.3rem var(--text);
+  transform-origin: 0 50%;
+  transform: rotate(var(--angle, 0deg));
+  pointer-events: none;
+  animation: line-draw 0.45s ease-out 0.15s both;
+}
+
+:root[data-contrast="high"] .win-line {
+  box-shadow: none;
+}
+
+.status.win {
+  animation: status-pop 0.55s ease-out;
+}
+
+.status.lose {
+  animation: status-shake 0.5s ease-in-out;
+}
+
+/* --- Dialog hasil pertandingan --- */
+#match-dialog {
+  width: min(24rem, calc(100% - 1.5rem));
+}
+
+/* Latar dialog dibuat lebih transparan supaya konfeti di belakangnya tetap terlihat */
+#match-dialog::backdrop {
+  background: rgba(10, 9, 24, 0.4);
+  backdrop-filter: none;
+}
+
+.match-inner {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.75rem 1.25rem 1.25rem;
+  text-align: center;
+}
+
+.trophy {
+  font-size: 3.5rem;
+  line-height: 1;
+  animation: trophy-bounce 0.9s ease-in-out infinite alternate;
+}
+
+.match-title {
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.match-summary {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+@keyframes flash-in-out {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes board-win {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.045) rotate(-0.6deg);
+  }
+  60% {
+    transform: scale(0.99) rotate(0.4deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes board-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-10px) rotate(-1deg);
+  }
+  30% {
+    transform: translateX(9px) rotate(0.8deg);
+  }
+  45% {
+    transform: translateX(-7px);
+  }
+  60% {
+    transform: translateX(5px);
+  }
+  80% {
+    transform: translateX(-2px);
+  }
+}
+
+@keyframes status-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes status-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-6px);
+  }
+  40%, 80% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes line-draw {
+  from {
+    transform: rotate(var(--angle, 0deg)) scaleX(0);
+  }
+  to {
+    transform: rotate(var(--angle, 0deg)) scaleX(1);
+  }
+}
+
+@keyframes trophy-bounce {
+  from {
+    transform: translateY(0) rotate(-6deg);
+  }
+  to {
+    transform: translateY(-0.5rem) rotate(6deg);
+  }
+}
+
 /* =========================================================
    10. LAYAR KECIL (HP)
    ========================================================= */
- 
-@media (max-width: 26rem) {
+
+@media (max-width: 28rem) {
+  body {
+    place-items: start center;
+  }
+
+  .card {
+    padding: 0.9rem;
+    border-radius: 1.35rem;
+  }
+
+  .topbar {
+    margin-bottom: 0.65rem;
+  }
+
+  .topbar-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    gap: 0.55rem;
+  }
+
+  .topbar-action > #a11y-open {
+    justify-self: start;
+  }
+
+  .topbar-preferences {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.35rem;
+  }
+
+  #game-open {
+    min-width: 0;
+    padding-inline: 0.7rem;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .language-button {
+    flex: 0 0 auto;
+    margin: 0;
+    transform: translateY(-3.40rem);
+  }
+
+  .language-button .seg-btn {
+    min-width: 2.55rem;
+    min-height: 2.35rem;
+    padding-inline: 0.65rem;
+  }
+
+  .field {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .field .seg {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .field .seg-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 0.4rem;
+  }
+
   .options {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -857,4 +1201,3 @@ html[data-motion="reduce"] *::after {
     padding-inline: 1rem;
   }
 }
- 

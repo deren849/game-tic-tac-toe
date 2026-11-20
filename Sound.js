@@ -1,0 +1,119 @@
+const MASTER_LEVEL = 0.5;
+let ctx = null;
+let master = null;
+let noiseBuffer = null;
+let enabled = true;
+let volume = 0.6;
+export function setSound(on, level) {
+    enabled = on;
+    volume = Math.min(1, Math.max(0, level));
+    if (master)
+        master.gain.value = volume * MASTER_LEVEL;
+}
+export function unlockAudio() {
+    if (ctx) {
+        if (ctx.state === "suspended")
+            void ctx.resume();
+        return;
+    }
+    if (typeof AudioContext === 'undefined')
+        return;
+    try {
+        ctx = new AudioContext();
+    }
+    catch {
+        return;
+    }
+    master = ctx.createGain();
+    master.gain.value = volume * MASTER_LEVEL;
+    const compressor = ctx.createDynamicsCompressor();
+    master.connect(compressor);
+    compressor.connect(ctx.destination);
+    void ctx.resume();
+}
+function tone(o) {
+    if (!ctx || !master)
+        return;
+    const t0 = ctx.currentTime + (o.start ?? 0);
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = o.type ?? 'sine';
+    osc.frequency.setValueAtTime(o.freq, t0);
+    if (o.endFreq)
+        osc.frequency.exponentialRampToValueAtTime(o.endFreq, t0 + o.duration);
+    env.gain.setValueAtTime(0.0001, t0);
+    env.gain.exponentialRampToValueAtTime(o.gain ?? 0.4, t0 + 0.008);
+    env.gain.exponentialRampToValueAtTime(0.0001, t0 + o.duration);
+    osc.connect(env);
+    env.connect(master);
+    osc.start(t0);
+    osc.stop(t0 + o.duration + 0.05);
+}
+function noise(start, duration, gain, lowpassHz) {
+    if (!ctx || !master)
+        return;
+    if (!noiseBuffer) {
+        noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++)
+            data[i] = Math.random() * 2 - 1;
+    }
+    const t0 = ctx.currentTime + start;
+    const src = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const env = ctx.createGain();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    filter.type = "lowpass";
+    filter.frequency.value = lowpassHz;
+    env.gain.setValueAtTime(gain, t0);
+    env.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    src.connect(filter);
+    filter.connect(env);
+    env.connect(master);
+    src.start(t0);
+    src.stop(t0 + duration + 0.05);
+}
+const recipes = {
+    // Satu nada pendek = klik tombol.
+    tick: () => tone({ freq: 880, duration: 0.05, type: "triangle", gain: 0.25 }),
+    // X: tajam dan naik (square). O: bulat dan turun (sine). Pemain bisa membedakan tanpa melihat.
+    placeX: () => tone({ freq: 520, endFreq: 780, duration: 0.11, type: "square", gain: 0.16 }),
+    placeO: () => tone({ freq: 330, endFreq: 247, duration: 0.15, type: "sine", gain: 0.5 }),
+    // win: arpeggio naik do-mi-sol-do (523, 659, 784, 1046 Hz); tiap nada mulai 0.1 detik setelah sebelumnya (start: i * 0.1),
+    // lalu satu nada tinggi panjang dan desis "berkilau". Terdengar ceria dan naik.
+    win: () => {
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => tone({ freq, start: i * 0.1, duration: 0.3, type: "triangle", gain: 0.38 }));
+        tone({ freq: 1568, start: 0.42, duration: 0.55, type: "sine", gain: 0.22 });
+        noise(0.4, 0.4, 0.1, 7000);
+    },
+    // lose: frekuensi TURUN (endFreq < freq) + dentuman bass + derau lowpass rendah = terdengar "jatuh" dan berat.
+    lose: () => {
+        tone({ freq: 311, endFreq: 98, duration: 0.9, type: "sawtooth", gain: 0.2 });
+        tone({ freq: 156, endFreq: 55, start: 0.08, duration: 0.9, type: "sine", gain: 0.5 });
+        noise(0, 0.3, 0.22, 450);
+    },
+    draw: () => {
+        tone({ freq: 392, duration: 0.22, type: "triangle", gain: 0.3 });
+        tone({ freq: 392, start: 0.2, duration: 0.35, type: "triangle", gain: 0.3 });
+    },
+    matchWin: () => {
+        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, i) => tone({ freq, start: i * 0.12, duration: 0.35, type: "triangle", gain: 0.36 }));
+        [1046.5, 1318.5, 1568].forEach((freq) => tone({ freq, start: 0.7, duration: 1.1, type: "sine", gain: 0.2 }));
+        noise(0.65, 0.8, 0.12, 8000);
+    },
+    matchLose: () => {
+        [392, 370, 349].forEach((freq, i) => tone({ freq, start: i * 0.28, duration: 0.3, type: "sawtooth", gain: 0.16 }));
+        tone({ freq: 330, endFreq: 220, start: 0.84, duration: 1, type: "sawtooth", gain: 0.18 });
+        tone({ freq: 82, start: 0.84, duration: 1, type: "sine", gain: 0.45 });
+    },
+};
+export function playSfx(name) {
+    if (!enabled || volume <= 0 || !ctx)
+        return;
+    if (ctx.state !== "running") {
+        void ctx.resume();
+        return;
+    }
+    recipes[name]();
+}

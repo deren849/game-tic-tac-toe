@@ -23,11 +23,13 @@ data-motion="full"
   <meta name="twitter:description" content="Mainkan Tic Tac Toe gratis melawan bot. Pilih papan 3×3 atau 5×5 dan tantang diri di tingkat kesulitan berbeda." />
   <meta name="twitter:image" content="https://d.uguu.se/yQKKsBhM.jpg" />
   <title>Tic Tac Toe — Main Gratis Melawan Bot</title>
-  <link rel="stylesheet" href="TicTacToe.css"/>
+  <link rel="stylesheet" href="./src/TicTacToe.css"/>
 </head>
 <body>
   <main class="card">
     <header class="topbar">
+
+      <div class="topbar-action">
       <button class="pill" id="a11y-open" type="button" aria-haspopup="dialog">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <circle cx="12" cy="4.5" r="2"/>
@@ -36,13 +38,27 @@ data-motion="full"
         <span data-i18n="a11yButton">Aksesibilitas</span>
       </button>
 
-      <div class="seg" role="group" aria-label="Bahasa" data-i18n-label="langGroup">
-        <button class="seg-btn" type="button" data-lang="id" lang="id" aria-pressed="true" aria-label="ID – Bahasa Indonesia">ID</button>
-        <button class="seg-btn" type="button" data-lang="en" lang="en" aria-pressed="false" aria-label="EN – English">EN</button>
+        <div class="topbar-preferences">
+          <button class="pill" id="game-open" type="button" aria-haspopup="dialog" data-i18n-label="gameSettingsButton" aria-label="Pengaturan game">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 6h8M16 6h4M4 12h2M10 12h10M4 18h10M18 18h2"/>
+              <circle cx="14" cy="6" r="2"/>
+              <circle cx="8" cy="12" r="2"/>
+              <circle cx="16" cy="18" r="2"/>
+            </svg>
+            <span data-i18n="gameSettingsButton">Pengaturan game</span>
+          </button>
+          <div class="seg language-button" role="group" aria-label="Bahasa" data-i18n-label="langGroup">
+            <button class="seg-btn"  type="button" data-lang="id" lang="id" aria-pressed="true" aria-label="ID – Bahasa Indonesia">ID</button>
+            <button class="seg-btn"  type="button" data-lang="en" lang="en" aria-pressed="false" aria-label="EN – English">EN</button>
+          </div>
+        </div>
       </div>
     </header>
 
     <h1 class="title">Tic Tac <span>Toe</span></h1>
+
+    <p class="round-info" id="round-info"></p>
     <p class="status" id="status" aria-live="polite">Giliranmu!</p>
 
     <div class="board" id="board" role="group" aria-label="Papan tic tac toe"></div>
@@ -65,20 +81,34 @@ data-motion="full"
           <button class="seg-btn" type="button" data-level="hard" aria-pressed="true" data-i18n="levelHard">Sulit</button>
         </div>
       </div>
+
+    <div class="field">
+      <span class="field-label" id="limit-label" data-i18n="roundLabel">batas  ronde</span>
+      <div class="seg" role="group" aria-labelledby="limit-label">
+        <button class="seg-btn" type="button" data-limit="0" aria-pressed="true" data-i18n-label="limitUnlimited" aria-label="Tak terbatas">∞</button>
+          <button class="seg-btn" type="button" data-limit="3" aria-pressed="false">3</button>
+          <button class="seg-btn" type="button" data-limit="5" aria-pressed="false">5</button>
+          <button class="seg-btn" type="button" data-limit="7" aria-pressed="false">7</button>
+          <button class="seg-btn" type="button" data-limit="10" aria-pressed="false">10</button>
+      </div>
+    </div>
+
+    <p class="hint" data-i18n="limitNote">∞ = main tanpa batas. Mengubah batas ronde memulai pertandingan baru.</p>
     </section>
+
 
     <section class="scoreboard">
       <div class="score">
-        <span class="score-label" data-i18n="scoreYou">Kamu</span> 
-        <strong id="score-win">0</strong> <b class="sym sym-x">X</b></span>
+        <span class="score-label"><span data-i18n="scoreYou">Kamu</span> <b class="sym sym-x">X</b></span>
+        <strong id="score-win">0</strong> 
       </div>
       <div class="score">
         <span class="score-label" data-i18n="scoreDraw">Seri</span>
         <strong id="score-draw">0</strong>
       </div>
       <div class="score">
-        <span class="score-label" data-i18n="scoreBot">Bot</span>
-        <strong id="score-lose">0</strong> <b class="sym sym-o">O</b></span>
+        <span class="score-label"> <span data-i18n="scoreBot">Bot</span> <b class="sym sym-o">O</b></span>
+        <strong id="score-lose">0</strong> 
       </div>
     </section>
 
@@ -183,6 +213,70 @@ data-motion="full"
     </form>
   </dialog>
 
-  <script type="module" src="ticTacToe.js"></script>
+  <dialog id="game-dialog" aria-labelledby="game-title">
+    <form id="game-form" class="dialog-inner">
+      <header class="dialog-head">
+        <h2 id="game-title" data-i18n="gameSettingsTitle">Pengaturan game</h2>
+        <button class="icon-btn" type="button" data-close-dialog data-i18n-label="a11yClose" aria-label="Tutup">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6 6 18"/>
+          </svg>
+        </button>
+      </header>
+
+       <div class="dialog-body">
+        <p class="intro" data-i18n="gameIntro">Atur suara dan efek visual. Perubahan langsung diterapkan dan tersimpan.</p>
+
+        <fieldset class="group">
+          <legend data-i18n="gameFxTitle">Suara &amp; efek</legend>
+
+           <label class="toggle">
+            <span class="toggle-text">
+              <span class="toggle-title" data-i18n="optSound">Efek suara</span>
+              <span class="toggle-hint" data-i18n="optSoundHint">Bunyi saat menaruh tanda, menang, dan kalah</span>
+            </span>
+            <input type="checkbox" role="switch" name="soundOn" />
+          </label>
+
+            <div class="slider">
+            <label class="toggle-title" for="volume" data-i18n="optVolume">Volume</label>
+            <div class="slider-row">
+              <input type="range" id="volume" name="volume" min="0" max="100" step="5" />
+              <output id="volume-out" for="volume">60%</output>
+            </div>
+          </div>
+
+          <label class="toggle">
+            <span class="toggle-text">
+              <span class="toggle-title" data-i18n="optEffects">Efek visual &amp; getar</span>
+              <span class="toggle-hint" data-i18n="optEffectsHint">Konfeti, percikan, dan getar di HP. Mati otomatis jika "Kurangi animasi" aktif.</span>
+            </span>
+            <input type="checkbox" role="switch" name="effectsOn" />
+          </label>
+        </fieldset>
+      </div>
+
+       <footer class="dialog-foot">
+        <button class="btn btn-secondary" id="game-reset" type="button" data-i18n="gameReset">Atur ulang</button>
+        <button class="btn btn-primary" type="button" data-close-dialog data-i18n="a11yDone">Selesai</button>
+      </footer>
+    </form>
+  </dialog>
+
+    <dialog id="match-dialog" aria-labelledby="match-title">
+    <div class="match-inner">
+      <span class="trophy" id="match-trophy" aria-hidden="true">🏆</span>
+      <h2 class="match-title" id="match-title"></h2>
+      <p class="match-summary" id="match-summary"></p>
+      <button class="btn btn-primary" id="match-again" type="button" data-i18n="matchAgain">Main Lagi</button>
+      <button class="btn btn-secondary" type="button" data-close-dialog data-i18n="a11yClose">Tutup</button>
+    </div>
+    </dialog>
+
+     <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="flash" id="flash" aria-hidden="true"></div>
+
+
+  <script type="module" src="/src/ticTacToe.ts"></script>
 </body>
 </html>
