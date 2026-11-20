@@ -244,11 +244,7 @@ export function ashFall(heavy = false): void {
   }
 }
 
-export function vibrate(pattern: number | number[]): void {
-    if (!enabled) return;
-    try {
-        if (typeof navigator.vibrate === 'function') navigator.vibrate(pattern);
-    } catch {
-        
-    }
+export function vibrate(pattern: number | number[]): boolean {
+    if (!enabled || typeof navigator.vibrate !== 'function') return false;
+    return navigator.vibrate(pattern);
 }

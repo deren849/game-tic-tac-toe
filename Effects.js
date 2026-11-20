@@ -202,12 +202,7 @@ export function ashFall(heavy = false) {
     }
 }
 export function vibrate(pattern) {
-    if (!enabled)
-        return;
-    try {
-        if (typeof navigator.vibrate === 'function')
-            navigator.vibrate(pattern);
-    }
-    catch {
-    }
+    if (!enabled || typeof navigator.vibrate !== 'function')
+        return false;
+    return navigator.vibrate(pattern);
 }

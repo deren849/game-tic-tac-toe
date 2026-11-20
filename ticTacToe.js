@@ -37,6 +37,8 @@ const gameForm = getEl("game-form");
 const gameOpenBtn = getEl("game-open");
 const gameResetBtn = getEl("game-reset");
 const volumeOutEl = getEl("volume-out");
+const vibrationTestBtn = getEl("vibration-test");
+const vibrationStatusEl = getEl("vibration-status");
 const matchDialog = getEl("match-dialog");
 const matchTitleEl = getEl("match-title");
 const matchSummaryEl = getEl("match-summary");
@@ -308,14 +310,14 @@ function clearResultFx() {
 function playResultEffects(winner, line) {
     if (winner === HUMAN) {
         playSfx("win");
-        vibrate([120, 60, 120, 60, 260]);
+        vibrate([240, 90, 240, 90, 420]);
         boardEl.classList.add("fx-win", "has-winner");
         playFlash("flash-win");
         confettiCannons();
     }
     else if (winner === BOT) {
         playSfx("lose");
-        vibrate(600);
+        vibrate([350, 100, 350]);
         boardEl.classList.add("fx-lose", "has-winner");
         playFlash("flash-lose");
         ashFall();
@@ -331,7 +333,7 @@ function showMatchResult() {
     const outcome = matchOutcome();
     if (outcome === "win") {
         playSfx("matchWin");
-        vibrate([150, 70, 150, 70, 150, 70, 400]);
+        vibrate([250, 80, 250, 80, 250, 80, 500]);
         bigCelebration();
     }
     else if (outcome === "lose") {
@@ -543,6 +545,17 @@ gameForm.addEventListener("change", () => {
     playSfx("tick");
 });
 gameForm.addEventListener("submit", (event) => event.preventDefault());
+vibrationTestBtn.addEventListener("click", () => {
+    if (typeof navigator.vibrate !== "function") {
+        vibrationStatusEl.textContent = t("vibrationUnsupported");
+        return;
+    }
+    if (!prefs.effectsOn || settings.reduceMotion) {
+        vibrationStatusEl.textContent = t("vibrationDisabled");
+        return;
+    }
+    vibrationStatusEl.textContent = t(vibrate([300, 100, 300]) ? "vibrationSent" : "vibrationRejected");
+});
 gameResetBtn.addEventListener("click", () => {
     prefs = { ...defaultPrefs(), roundLimit: prefs.roundLimit };
     writePrefsForm(gameForm, prefs);
