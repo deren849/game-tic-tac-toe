@@ -308,14 +308,14 @@ function clearResultFx() {
 function playResultEffects(winner, line) {
     if (winner === HUMAN) {
         playSfx("win");
-        vibrate([60, 40, 60, 40, 140]);
+        vibrate([120, 60, 120, 60, 260]);
         boardEl.classList.add("fx-win", "has-winner");
         playFlash("flash-win");
         confettiCannons();
     }
     else if (winner === BOT) {
         playSfx("lose");
-        vibrate(350);
+        vibrate(600);
         boardEl.classList.add("fx-lose", "has-winner");
         playFlash("flash-lose");
         ashFall();
@@ -331,7 +331,7 @@ function showMatchResult() {
     const outcome = matchOutcome();
     if (outcome === "win") {
         playSfx("matchWin");
-        vibrate([80, 50, 80, 50, 80, 50, 240]);
+        vibrate([150, 70, 150, 70, 150, 70, 400]);
         bigCelebration();
     }
     else if (outcome === "lose") {
