@@ -115,6 +115,3 @@ npm run build
 - Efek suara sudah diuji tidak menimbulkan error, tetapi belum didengarkan langsung di berbagai perangkat.
 - Belum diuji di HP sungguhan dan dengan pembaca layar nyata (hanya lewat emulasi browser).
 
-## Rencana
-
-- Mode **AI Claude** sebagai lawan (membutuhkan server perantara agar API key tidak terbuka di frontend, dengan cadangan ke bot lokal). Belum dibuat.
